@@ -1,0 +1,61 @@
+// Job Application Tracker — data model (SQLite for local; swap provider to
+// postgresql at deploy time without changing app code).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Single-row table holding Shivam's background. id is always "singleton".
+model Profile {
+  id             String   @id @default("singleton")
+  resumeText     String   @default("")
+  resumeFileName String?
+  fullName       String?
+  email          String?
+  phone          String?
+  links          String?
+  updatedAt      DateTime @updatedAt
+}
+
+// One card on the board. status is a string enum (SQLite has no native enums);
+// allowed values live in src/lib/status.ts.
+model Job {
+  id              String   @id @default(cuid())
+  title           String   @default("")
+  company         String   @default("")
+  location        String   @default("")
+  sourceUrl       String?
+  descriptionText String   @default("")
+  status          String   @default("WISHLIST")
+  order           Float    @default(0)
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  kit             Kit?
+}
+
+// Generated AI artifacts for a job. Regenerated in place (one set per job).
+model Kit {
+  id                 String   @id @default(cuid())
+  jobId              String   @unique
+  job                Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  coverLetter        String   @default("")
+  resumeBullets      String   @default("")
+  interviewQuestions String   @default("")
+  companyBrief       String   @default("")
+  modelUsed          String   @default("")
+  generatedAt        DateTime @updatedAt
+}
+
+// Single-row settings. id is always "singleton". API key stored locally only.
+model Settings {
+  id               String   @id @default("singleton")
+  openRouterApiKey String   @default("")
+  model            String   @default("anthropic/claude-sonnet-4.5")
+  updatedAt        DateTime @updatedAt
+}
